@@ -283,6 +283,21 @@ class TestRequestStats(unittest.TestCase):
         self.stats.log_error("GET", "/some-path", "", Exception("Third exception!"))
         self.assertEqual(3, len(self.stats.errors))
 
+    def test_error_grouping_with_multiple_hosts(self):
+        # reset stats
+        self.stats = RequestStats()
+
+        self.stats.log_error("GET", "/some-path", "http://127.0.0.1:1", Exception("Exception!"))
+        self.stats.log_error("GET", "/some-path", "http://127.0.0.1:2", Exception("Exception!"))
+        self.assertEqual(2, len(self.stats.errors))
+        self.assertEqual(1, list(self.stats.errors.values())[0].occurrences)
+        self.assertEqual(1, list(self.stats.errors.values())[1].occurrences)
+
+        self.stats.log_error("GET", "/some-path", "http://127.0.0.1:1", Exception("Another exception!"))
+        self.stats.log_error("GET", "/some-path", "http://127.0.0.1:1", Exception("Another exception!"))
+        self.stats.log_error("GET", "/some-path", "http://127.0.0.1:2", Exception("Third exception!"))
+        self.assertEqual(4, len(self.stats.errors))
+
     def test_error_grouping_errors_with_memory_addresses(self):
         # reset stats
         self.stats = RequestStats()
@@ -598,6 +613,23 @@ class TestCsvStats(LocustTestCase):
         gevent.kill(greenlet2)
         self.assertEqual(1, len(hs1))
         self.assertEqual(0, len(hs2))
+
+    def test_csv_multiple_hosts(self):
+        class UserOne(User):
+            host = "http://127.0.0.1:1"
+
+        class UserTwo(User):
+            host = "http://127.0.0.1:2"
+
+        self.environment.user_classes = [UserOne, UserTwo]
+
+        _write_csv_files(self.environment, self.STATS_BASE_NAME)
+
+        with open(self.STATS_HISTORY_FILENAME) as f:
+            reader = csv.DictReader(f)
+            rows = [r for r in reader]
+
+        self.assertIn("Host", rows[0])
 
 
 class TestStatsEntryResponseTimesCache(unittest.TestCase):
