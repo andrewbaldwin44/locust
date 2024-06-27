@@ -8,6 +8,7 @@ from configargparse import Namespace
 from .dispatch import UsersDispatcher
 from .event import Events
 from .exception import RunnerAlreadyExistsError
+from .exporter import LocustExporter
 from .runners import LocalRunner, MasterRunner, Runner, WorkerRunner
 from .shape import LoadTestShape
 from .stats import RequestStats, StatsCSV
@@ -37,6 +38,7 @@ class Environment:
         available_shape_classes: dict[str, LoadTestShape] | None = None,
         available_user_tasks: dict[str, list[TaskSet | Callable]] | None = None,
         dispatcher_class: type[UsersDispatcher] = UsersDispatcher,
+        use_exporter: bool = False,
     ):
         self.runner: Runner | None = None
         """Reference to the :class:`Runner <locust.runners.Runner>` instance"""
@@ -68,7 +70,9 @@ class Environment:
         """If set, only tasks that are tagged by tags in this list will be executed. Leave this as None to use the one from parsed_options"""
         self.exclude_tags = exclude_tags
         """If set, only tasks that aren't tagged by tags in this list will be executed. Leave this as None to use the one from parsed_options"""
-        self.stats = RequestStats()
+        self.exporter = LocustExporter(self) if use_exporter else None
+        """Reference to LocustExporter instance for us with prometheus"""
+        self.stats = RequestStats(self)
         """Reference to RequestStats instance"""
         self.host = host
         """Base URL of the target system"""
@@ -151,7 +155,7 @@ class Environment:
         """
         # Create a new RequestStats with use_response_times_cache set to False to save some memory
         # and CPU cycles, since the response_times_cache is not needed for Worker nodes
-        self.stats = RequestStats(use_response_times_cache=False)
+        self.stats = RequestStats(None, use_response_times_cache=False)
         return self._create_runner(
             WorkerRunner,
             master_host=master_host,

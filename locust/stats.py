@@ -197,7 +197,7 @@ class RequestStats:
     Class that holds the request statistics. Accessible in a User from self.environment.stats
     """
 
-    def __init__(self, use_response_times_cache=True):
+    def __init__(self, environment, use_response_times_cache=True):
         """
         :param use_response_times_cache: The value of use_response_times_cache will be set for each StatsEntry()
                                          when they are created. Settings it to False saves some memory and CPU
@@ -209,6 +209,10 @@ class RequestStats:
         self.errors: dict[str, StatsError] = {}
         self.total = StatsEntry(self, "Aggregated", None, use_response_times_cache=self.use_response_times_cache)
         self.history = []
+        self.environment = environment
+
+        if self.environment and self.environment.exporter:
+            self.environment.exporter.register(self.entries)
 
     @property
     def num_requests(self):
@@ -234,6 +238,9 @@ class RequestStats:
         self.total.log(response_time, content_length)
         self.entries[(name, method)].log(response_time, content_length)
 
+        if self.environment.exporter:
+            self.environment.exporter.export((name, method))
+
     def log_error(self, method: str, name: str, error: Exception | str | None) -> None:
         self.total.log_error(error)
         self.entries[(name, method)].log_error(error)
@@ -245,6 +252,9 @@ class RequestStats:
             entry = StatsError(method, name, error)
             self.errors[key] = entry
         entry.occurred()
+
+        if self.environment.exporter:
+            self.environment.exporter.export((name, method))
 
     def get(self, name: str, method: str) -> StatsEntry:
         """
