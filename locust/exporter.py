@@ -1,54 +1,77 @@
-import time
+import atexit
+import csv
+import os
+from datetime import datetime
 
+import gevent
 import requests
-from prometheus_client import Gauge, start_http_server
-
-from .stats import PERCENTILES_TO_CHART
-
-total_rps_gauge = Gauge("total_rps", "Total number of requests per second")
-total_fail_per_sec_gauge = Gauge("total_fail_per_sec", "Total number of failures per second")
-total_fail_ratio_gauge = Gauge("total_fail_ratio", "Percentage of total failures out of the total number of requests")
-total_avg_response_time_gauge = Gauge("total_avg_response_time", "Total average response time")
-user_count_gauge = Gauge("user_count", "Total number of Locust users")
-current_response_time_percentiles_gauge = Gauge("current_response_time_percentiles", "Total number of Locust requests")
-current_response_time_percentiles_gauges = {
-    f"response_time_percentile_{percentile}": Gauge(
-        f"current_response_time_{int(percentile * 100)}", f"{percentile}th percentile"
-    )
-    for percentile in PERCENTILES_TO_CHART
-}
+from influxdb_client import InfluxDBClient
+from influxdb_client.client.write_api import SYNCHRONOUS
 
 
 class LocustExporter:
-    def __init__(self, environment):
-        self.environment = environment
+    def __init__(self):
         self.stat_entries = {}
+        self._points = []
+        client = InfluxDBClient(
+            url="http://localhost:8086",
+            token=os.environ.get("INFLUXDB_TOKEN"),
+            org="ORG",
+        )
+        self._bucket = "bucket"
+        self._write_api = client.write_api(write_options=SYNCHRONOUS)
+        self._query_api = client.query_api()
 
-        start_http_server(8000)
+        self._greenlet = gevent.spawn(self._on_start)
+
+        atexit.register(self._on_exit)
+
+    def _on_start(self):
+        while True:
+            # Copy and clear list so only new points are sent each cycle
+            points = self._points.copy()
+            self._points.clear()
+            self._write_api.write(record=points, bucket=self._bucket)
+            gevent.sleep(0.5)
+
+    def _format_point(self, measurement, tags, fields):
+        return {"measurement": measurement, "tags": tags, "fields": fields, "time": datetime.utcnow().isoformat()}
+
+    def _on_exit(self):
+        self._greenlet.kill()
 
     def register(self, stat_entries):
         self.stat_entries = stat_entries
 
-    def export(self, stats_key):
-        # current_stats = self.stat_entries[stats_key].to_dict()
-        total_stats = self.environment.runner.stats.total
-        total_stats_dict = total_stats.to_dict()
+    def export(self, name, method, success=True, **fields):
+        measurement = "request_success" if success else "request_failure"
+        point = self._format_point(measurement, tags={"name": name, "method": method}, fields=fields)
 
-        total_rps = total_stats_dict["current_rps"]
-        total_fail_per_sec = total_stats_dict["current_fail_per_sec"]
-        total_fail_ratio = total_stats.fail_ratio
-        total_avg_response_time = total_stats_dict["avg_response_time"]
-        user_count = self.environment.runner.user_count
+        self._points.append(point)
 
-        total_rps_gauge.set(total_rps)
-        total_fail_per_sec_gauge.set(total_fail_per_sec)
-        total_fail_ratio_gauge.set(total_fail_ratio)
-        total_avg_response_time_gauge.set(total_avg_response_time)
-        user_count_gauge.set(user_count)
+    def get_stats(self):
+        try:
+            influxql_query = f"""
+                from(bucket: "{self._bucket}")
+                    |> range(start: -5m)
+                    |> filter(fn: (r) => r["_measurement"] == "request_success" and r["_field"] == "response_time")
+                    |> aggregateWindow(every: 1s, fn: max, createEmpty: false)
+                    |> yield(name: "max")
 
-        for percentile in PERCENTILES_TO_CHART:
-            current_response_time_percentiles_gauges[f"response_time_percentile_{percentile}"].set(
-                total_stats.get_current_response_time_percentile(percentile)
-            )
+                from(bucket: "{self._bucket}")
+                            |> range(start: -5m)
+                            |> filter(fn: (r) => r["_measurement"] == "request_success" and r["_field"] == "response_time")
+                            |> aggregateWindow(every: 1s, fn: median, createEmpty: false)
+                            |> aggregateWindow(every: 1s, fn: min, createEmpty: false)
+                            |> yield(name: "min")
 
-        # {__name__=~"total_rps|total_fail_per_sec"}
+                from(bucket: "{self._bucket}")
+                            |> range(start: -5m)
+                            |> filter(fn: (r) => r["_measurement"] == "request_success" and r["_field"] == "response_time")
+                            |> aggregateWindow(every: 1s, fn: median, createEmpty: false)
+                            |> yield(name: "median")
+            """
+            response = self._query_api.query(influxql_query)
+            return response
+        except Exception as e:
+            print(e)

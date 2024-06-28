@@ -150,9 +150,12 @@ class WebUI:
         def handle_exception(error):
             error_message = str(error)
             error_code = getattr(error, "code", 500)
+            log_error_message = (
+                f"{error.code}: {error.name}" if hasattr(error, "code") and hasattr(error, "name") else "error"
+            )
             logger.log(
                 logging.INFO if error_code <= 404 else logging.ERROR,
-                f"UI got request for {request.path}, but it resulted in a {error.code}: {error.name}",
+                f"UI got request for {request.path}, but it resulted in a {log_error_message}",
             )
             return make_response(error_message, error_code)
 
@@ -401,6 +404,10 @@ class WebUI:
 
             for s in chain(sort_stats(environment.runner.stats.entries), [environment.runner.stats.total]):
                 stats.append(s.to_dict())
+
+            if self.environment.exporter:
+                exporter_stats = self.environment.exporter.get_stats()
+                print(exporter_stats)
 
             errors = [e.serialize() for e in environment.runner.errors.values()]
 

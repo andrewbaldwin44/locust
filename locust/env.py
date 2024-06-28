@@ -70,7 +70,7 @@ class Environment:
         """If set, only tasks that are tagged by tags in this list will be executed. Leave this as None to use the one from parsed_options"""
         self.exclude_tags = exclude_tags
         """If set, only tasks that aren't tagged by tags in this list will be executed. Leave this as None to use the one from parsed_options"""
-        self.exporter = LocustExporter(self) if use_exporter else None
+        self.exporter = LocustExporter() if use_exporter else None
         """Reference to LocustExporter instance for us with prometheus"""
         self.stats = RequestStats(self)
         """Reference to RequestStats instance"""

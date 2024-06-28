@@ -239,7 +239,7 @@ class RequestStats:
         self.entries[(name, method)].log(response_time, content_length)
 
         if self.environment.exporter:
-            self.environment.exporter.export((name, method))
+            self.environment.exporter.export(name, method, response_time=response_time, content_length=content_length)
 
     def log_error(self, method: str, name: str, error: Exception | str | None) -> None:
         self.total.log_error(error)
@@ -254,7 +254,7 @@ class RequestStats:
         entry.occurred()
 
         if self.environment.exporter:
-            self.environment.exporter.export((name, method))
+            self.environment.exporter.export(name, method, error="error", success=False)
 
     def get(self, name: str, method: str) -> StatsEntry:
         """
