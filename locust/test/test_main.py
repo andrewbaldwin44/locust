@@ -412,7 +412,7 @@ class StandaloneIntegrationTests(ProcessIntegrationTest):
             )
             stdout, stderr = proc.communicate()
             self.assertIn("ERROR/locust.main: Valid --stop-timeout formats are", stderr)
-            self.assertEqual(1, proc.returncode)
+            self.assertEqual(2, proc.returncode)
 
     @unittest.skipIf(os.name == "nt", reason="Signal handling on windows is hard")
     def test_headless_spawn_options_wo_run_time(self):

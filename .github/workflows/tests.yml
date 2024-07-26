@@ -14,16 +14,64 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {name: Windows, python: '3.12', os: windows-latest, tox: fail_fast_test_main, skip_pre_build: "true" }
+          - {
+              name: Windows,
+              python: "3.12",
+              os: windows-latest,
+              tox: fail_fast_test_main,
+              skip_pre_build: "true",
+            }
           # - {name: Mac, python: '3.12', os: macos-latest, tox: fail_fast_test_main, skip_pre_build: "false" }
-          - { name: "ruff", python: "3.11", os: ubuntu-latest, tox: "ruff", skip_pre_build: "false" }
-          - { name: "mypy", python: "3.10", os: ubuntu-latest, tox: "mypy", skip_pre_build: "false" }
+          - {
+              name: "ruff",
+              python: "3.11",
+              os: ubuntu-latest,
+              tox: "ruff",
+              skip_pre_build: "false",
+            }
+          - {
+              name: "mypy",
+              python: "3.10",
+              os: ubuntu-latest,
+              tox: "mypy",
+              skip_pre_build: "false",
+            }
           # run some integration tests and abort immediately if they fail, for faster feedback
-          - { name: "Linux", python: "3.12", os: ubuntu-latest, tox: fail_fast_test_main, skip_pre_build: "false" }
-          - { name: "3.12", python: "3.12", os: ubuntu-latest, tox: py312, skip_pre_build: "false" }
-          - { name: "3.11", python: "3.11", os: ubuntu-latest, tox: py311, skip_pre_build: "false" }
-          - { name: "3.10", python: "3.10", os: ubuntu-latest, tox: py310, skip_pre_build: "false" }
-          - { name: "3.9", python: "3.9", os: ubuntu-latest, tox: py39, skip_pre_build: "false" }
+          - {
+              name: "Linux",
+              python: "3.12",
+              os: ubuntu-latest,
+              tox: fail_fast_test_main,
+              skip_pre_build: "false",
+            }
+          - {
+              name: "3.12",
+              python: "3.12",
+              os: ubuntu-latest,
+              tox: py312,
+              skip_pre_build: "false",
+            }
+          - {
+              name: "3.11",
+              python: "3.11",
+              os: ubuntu-latest,
+              tox: py311,
+              skip_pre_build: "false",
+            }
+          - {
+              name: "3.10",
+              python: "3.10",
+              os: ubuntu-latest,
+              tox: py310,
+              skip_pre_build: "false",
+            }
+          - {
+              name: "3.9",
+              python: "3.9",
+              os: ubuntu-latest,
+              tox: py39,
+              skip_pre_build: "false",
+            }
 
     steps:
       - uses: actions/checkout@v4
@@ -52,7 +100,7 @@ jobs:
       - name: set full Python version in PY env var
         # See https://pre-commit.com/#github-actions-example
         run: echo "PY=$(python -VV | sha256sum | cut -d' ' -f1)" >> $GITHUB_ENV
-      # Install node and yarn in order to build the front end during packaging  
+      # Install node and yarn in order to build the front end during packaging
       - name: Set Node.js 18.x
         uses: actions/setup-node@v3
         with:
@@ -60,19 +108,6 @@ jobs:
       - name: Install Yarn
         run: npm install -g yarn
       # Build and install the package if it's Windows, to service shell-based tests
-      - name: Install binary on Windows
-        if: ${{ matrix.os == 'windows-latest' }}
-        env:
-          SKIP_PRE_BUILD: true
-        # Make `locust` available on the Windows shell by installing it with `pip`
-        # before running tests which invoke it in the `cmd` prompt
-        run: |
-          python -m poetry build
-          python -m poetry self add "poetry-plugin-export"
-          python -m poetry export --without-hashes --format=requirements.txt > requirements.txt
-          pip install -r requirements.txt
-          pip install poetry-core>=1.0.0
-          pip install locust --find-links=dist
       - name: Run tox tests
         env:
           SKIP_PRE_BUILD: ${{ matrix.skip_pre_build }}
