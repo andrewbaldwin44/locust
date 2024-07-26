@@ -108,6 +108,15 @@ jobs:
       - name: Install Yarn
         run: npm install -g yarn
       # Build and install the package if it's Windows, to service shell-based tests
+      - name: Install binary on Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        env:
+          SKIP_PRE_BUILD: true
+        # Make `locust` available on the Windows shell by installing it with `pip`
+        # before running tests which invoke it in the `cmd` prompt
+        run: |
+          poetry shell
+          poetry show
       - name: Run tox tests
         env:
           SKIP_PRE_BUILD: ${{ matrix.skip_pre_build }}
