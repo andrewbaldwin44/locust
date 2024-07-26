@@ -115,8 +115,15 @@ jobs:
         # Make `locust` available on the Windows shell by installing it with `pip`
         # before running tests which invoke it in the `cmd` prompt
         run: |
-          poetry shell
-          poetry show
+          python -m poetry build
+          python -m poetry self add "poetry-plugin-export"
+          python -m poetry export --without-hashes --format=requirements.txt > requirements.txt
+          pip install -r requirements.txt
+          pip install poetry-core>=1.0.0
+          pip install locust --find-links=dist
+      - name: Show installed
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: poetry show
       - name: Run tox tests
         env:
           SKIP_PRE_BUILD: ${{ matrix.skip_pre_build }}
