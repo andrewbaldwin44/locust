@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Theme } from '@mui/material/styles';
 import { Provider } from 'react-redux';
 
 import Dashboard from 'pages/Dashboard';
@@ -9,13 +10,12 @@ import { store } from 'redux/store';
 import { ITab } from 'types/tab.types';
 export { default as Table } from 'components/Table/Table';
 export { default as LineChart } from 'components/LineChart/LineChart';
-export { baseTabs } from 'components/Tabs/Tabs.constants';
+export { tabConfig } from 'components/Tabs/Tabs.constants';
 export { default as useInterval } from 'hooks/useInterval';
 export { roundToDecimalPlaces } from 'utils/number';
 export { SWARM_STATE } from 'constants/swarm';
 export { default as Select } from 'components/Form/Select';
 export type { IRootState } from 'redux/store';
-
 export type { ITab } from 'types/tab.types';
 
 export interface IExtendedTableStructure<StatKey> {
@@ -50,6 +50,7 @@ export interface ILocustUi<ExtendedTabKey, StatKeys extends string> {
   extendedTables?: IExtendedTable<ExtendedTabKey, StatKeys>[];
   extendedReports?: IExtendedReport[];
   extendedStats?: IExtendedStat<ExtendedTabKey, StatKeys>[];
+  extendedTheme: Theme;
   tabs?: ITab[];
 }
 
@@ -61,6 +62,7 @@ export default function LocustUi<
   extendedTables,
   extendedReports,
   extendedStats,
+  extendedTheme,
   tabs,
 }: ILocustUi<ExtendedTabKey, StatKey>) {
   const setSwarm = useAction(swarmActions.setSwarm, store.dispatch);
@@ -76,7 +78,7 @@ export default function LocustUi<
 
   return (
     <Provider store={store}>
-      <Dashboard extendedTabs={extendedTabs} tabs={tabs} />
+      <Dashboard extendedTabs={extendedTabs} extendedTheme={extendedTheme} tabs={tabs} />
     </Provider>
   );
 }

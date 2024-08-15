@@ -1,5 +1,5 @@
 import CssBaseline from '@mui/material/CssBaseline';
-import { ThemeProvider } from '@mui/material/styles';
+import { Theme, ThemeProvider } from '@mui/material/styles';
 import { connect } from 'react-redux';
 
 import Layout from 'components/Layout/Layout';
@@ -7,8 +7,8 @@ import useLogViewer from 'components/LogViewer/useLogViewer';
 import SwarmForm from 'components/SwarmForm/SwarmForm';
 import Tabs from 'components/Tabs/Tabs';
 import { SWARM_STATE } from 'constants/swarm';
+import useCreateTheme from 'hooks/useCreateTheme';
 import useSwarmUi from 'hooks/useSwarmUi';
-import useTheme from 'hooks/useTheme';
 import { IRootState } from 'redux/store';
 import { ITab } from 'types/tab.types';
 import { SwarmState } from 'types/ui.types';
@@ -17,14 +17,15 @@ interface IDashboard {
   isModalOpen?: boolean;
   swarmState: SwarmState;
   extendedTabs?: ITab[];
+  extendedTheme?: Theme;
   tabs?: ITab[];
 }
 
-function Dashboard({ swarmState, tabs, extendedTabs }: IDashboard) {
+function Dashboard({ swarmState, tabs, extendedTabs, extendedTheme }: IDashboard) {
   useSwarmUi();
   useLogViewer();
 
-  const { theme } = useTheme();
+  const theme = useCreateTheme(extendedTheme);
 
   return (
     <ThemeProvider theme={theme}>
