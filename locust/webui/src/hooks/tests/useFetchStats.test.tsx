@@ -1,4 +1,4 @@
-import { act, waitFor } from '@testing-library/react';
+import { act } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { beforeAll, afterEach, afterAll, describe, expect, test, vi } from 'vitest';
@@ -28,17 +28,19 @@ describe('useFetchStats', () => {
   afterAll(() => server.close());
 
   test('should fetch request stats and update UI accordingly', async () => {
+    vi.useFakeTimers();
+
     const { store } = renderWithProvider(<MockHook />, {
       swarm: { state: SWARM_STATE.RUNNING },
     });
 
-    await waitFor(() => {
-      if (!store.getState().ui.stats.length) {
-        throw new Error();
-      }
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3900);
     });
 
     expect(store.getState().ui.stats).toEqual(statsResponseTransformed.stats);
+
+    vi.useRealTimers();
   });
 
   test('should add markers to charts between tests', async () => {
@@ -63,11 +65,13 @@ describe('useFetchStats', () => {
     });
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(2000);
+      await vi.advanceTimersByTimeAsync(3900);
     });
 
     const testStartTime = new Date().toISOString();
 
     expect((store.getState().ui.charts as ICharts).markers).toEqual([testStopTime, testStartTime]);
+
+    vi.useRealTimers();
   });
 });
