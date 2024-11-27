@@ -44,11 +44,10 @@ except ModuleNotFoundError as e:
     if e.msg != "No module named 'locust_plugins'":
         raise
 try:
-    import locust_cloud  # pyright: ignore[reportMissingImports]
-
-    locust_cloud_version = f" (locust-cloud {importlib.metadata.version('locust-cloud')})"
+    if os.getcwd() not in sys.path:
+        sys.path.insert(0, os.getcwd())
+    import locust_cloud.main  # pyright: ignore[reportMissingImports]
 except ModuleNotFoundError as e:
-    locust_cloud_version = ""
     if e.msg != "No module named 'locust_cloud'":
         raise
 
@@ -205,7 +204,7 @@ def main():
     children = []
     logger = logging.getLogger(__name__)
 
-    logger.info(f"Starting Locust {version}{locust_cloud_version}")
+    logger.info(f"Starting Locust {version}")
 
     if options.processes:
         if os.name == "nt":
