@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import locust
+from locust.analytics import analytics_init
 from locust.opentelemetry import setup_opentelemetry
 
 import atexit
@@ -186,6 +187,7 @@ def main():
     # parse all command line options
     parser = get_parser()
     options = parser.parse_args()
+    analytics_init(options, parser)
 
     if getattr(options, "cloud", None):
         sys.exit(locust_cloud.main(locustfiles=locustfiles))

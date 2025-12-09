@@ -32,6 +32,7 @@ from gevent import pywsgi
 
 from . import __version__ as version
 from . import argument_parser, stats
+from .analytics import read_config
 from .contrib import fasthttp
 from .html import DEFAULT_BUILD_PATH, get_html_report, render_template_from
 from .log import get_logs, greenlet_exception_logger
@@ -205,8 +206,13 @@ class WebUI:
             if not environment.runner:
                 return make_response("Error: Locust Environment does not have any runner", 500)
             self.update_template_args()
-
-            return render_template("index.html", template_args=self.template_args)
+            analytics_config = read_config()
+            return render_template(
+                "index.html",
+                template_args=self.template_args,
+                anonymous_id=analytics_config.anonymousId,
+                enable_analytics=analytics_config.enabled and not environment.parsed_options.disable_analytics,
+            )
 
         @app_blueprint.route("/swarm", methods=["POST"])
         @self.auth_required_if_enabled

@@ -885,6 +885,12 @@ Typically ONLY these options (and --locustfile) need to be specified on workers,
         help="Instrument the Locust test run with OpenTelemetry.",
         env_var="LOCUST_ENABLE_OPENTELEMETRY",
     )
+    other_group.add_argument(
+        "--disable-analytics",
+        action="store_true",
+        help="Locust collects completely anonymous open-source telemetry data about general usage using Plausible.io. Participation in this anonymous program is optional, and you may opt-out if you'd not like to share any information.",
+        env_var="LOCUST_DISABLE_ANALYTICS",
+    )
 
     user_classes_group = parser.add_argument_group("User classes")
     user_classes_group.add_argument(

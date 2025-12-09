@@ -8,4 +8,5 @@ export interface IWindow {
   authArgs: IAuthArgs;
   theme?: PaletteMode;
   baseUrl?: string;
+  posthog: { capture: (eventName: string, props: Record<string, any>) => void };
 }

@@ -45,6 +45,7 @@ dependencies = [
     "psutil>=5.9.1",
     "Flask-Login>=0.6.3",
     "Flask-Cors>=3.0.10",
+    "posthog==7.0.1",
     "pywin32; sys_platform == 'win32'",
     "locust-cloud>=1.29.5",
     "gevent>=24.10.1,<26.0.0,!=25.8.1",
